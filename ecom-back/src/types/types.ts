@@ -11,4 +11,4 @@ export type ControllerType =(
     req:Request,
     res:Response,
     Next:NextFunction,
-    ) => Promise<Response<any,Record<string,any>>|undefined>
+    ) => Promise<void | Response<any, Record<string, any>>>
