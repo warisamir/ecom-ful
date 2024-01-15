@@ -6,7 +6,6 @@ import { NewProductRequestBody } from "../types/types.js";
 import ErrorHandler from "../utils/utility-class.js";
 import { rm } from "fs";
 import { create } from "domain";
-import { TryCatch } from '../middlewares/Error';
 
 
 export const newProduct=TryCatch(
@@ -57,6 +56,7 @@ export const getAdminProducts=TryCatch(async(req,res,next)=>{
 
 export const getsingleProduct=TryCatch(async(req,res,next)=>{
     const product=await Product.findById(req.params.id);
+    if (!product) return next(new ErrorHandler("Product Not Found", 404));
     return res.status(200).json({
         success:true,
         product,
@@ -68,23 +68,38 @@ export const updateProduct=TryCatch(async(req,res,next)=>{
     const {id}=req.params;
     const photo=req.file;
     const product=await Product.findById(id);
-    if(!photo) return next(new ErrorHandler("Please Add photo",400));
-    if(!name || !price || !stock || !category) 
+    if(!product)
+    return next(new ErrorHandler("Product Not Found",404));
+ if(photo) 
     {
-        rm(photo.path,()=>{
-            console.log("deleted");
+        rm(product.photo!,()=>{
+            console.log("Old one deleted");
         })
+        product.photo= photo.path;
     }
-    await Product.create({
-        name,  
-        price,
-        stock,
-        category:category.toLowerCase(),
-        photo:photo?.path,
-        _id:id
-    })
-     return res.status(201).json({
+
+  if(name)product.name=name;
+  if(price)product.price=price;
+  if(stock)product.stock=stock;
+  if(category) product.category=category;
+  await product.save();
+    return res.status(201).json({
         success:true,
-        message:"Product Created Successfully",
+        message:"Product Updated Successfully",
+    })
+})
+
+export const deleteProduct=TryCatch(async(req,res,next)=>{
+    const product =await Product.findById(req.params.id);
+    if(!product) 
+    return next(new ErrorHandler("Product Not Found",404));
+    rm(product.photo!,()=>{
+        console.log(("Product photo deleted"))
+    });
+
+    await product.deleteOne();
+    return res.status(200).json({
+        success:true,
+        message:"Product Deleted Successfully",
     })
 })
